@@ -30,7 +30,7 @@ Notes:
 - For transparency, all changes are logged via an event, eg `SelectorMappingUpdated(bytes4 indexed selector, address indexed oldTarget, address indexed newTarget)`. 
 - A SelectorProxy may support Batch Operations: Set multiple selectors at once for efficiency
 - A SelectorProxy may be sealed for sake of immutability
-- A SelectorProxy may supports specific gaz budget per selector
+- A SelectorProxy may support specific gas budget per selector
 - Care must be taken to ensure consistent storage and avoid storage collision bugs
 
 ## Comparison to other proxy patterns

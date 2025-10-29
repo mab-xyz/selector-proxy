@@ -38,7 +38,7 @@ Notes:
 - [Transparent Proxy (EIP-1967)](https://eips.ethereum.org/EIPS/eip-1967) The selector-proxy offers finer granularity by allowing individual function upgrades, providing better transparency about what changed and simplifying audits. 
 - [Beacon Proxy (EIP-1967)](https://eips.ethereum.org/EIPS/eip-1967) The selector-proxy serves a different use case: routing different functions to different implementations within a single proxy. Beacon is ideal for "one implementation, many proxies" while selector-proxy is ideal for "many implementations, one proxy."
 - [UUPS (Universal Upgradeable Proxy Standard, EIP-1822)](https://eips.ethereum.org/EIPS/eip-1822) UUPS is less flexible, it shares the same risk of storage collision.
-- [Diamond Pattern (EIP-2535)](https://eips.ethereum.org/EIPS/eip-2535) The diamond pattern is the closest relative to the selector-proxy. Both map function selectors to implementation contracts (called "facets" in diamonds). The selector-proxy is a simpler, lighter-weight version focused purely on selector-to-target routing without the fancy diamond terminology (facets, loupe).
+- [Diamond Pattern (EIP-2535)](https://eips.ethereum.org/EIPS/eip-2535) The diamond pattern is the closest relative to the selector-proxy. Both map function selectors to implementation contracts (called "facets" in diamonds). The selector-proxy is a simpler, lighter-weight version focused purely on selector-to-target routing without the fancy diamond terminology (facets, loupe), focusing on security (more transparency, easier auditability, support for automated code analysis)
 
 ## Ethereum Standardization ERC
 

@@ -1,6 +1,6 @@
-# selector-proxy
+# Selector Proxy for Smart COntracts.
 
-A proxy pattern and reference implementation for more transparency
+A smart contract proxy pattern for more transparency, auditability and automated code analysis.
 
 The SelectorProxy design pattern uses a mapping to route function calls to different implementation contracts based on their 4-byte function selectors, allowing you to split functionality across multiple specialized contracts while maintaining a single entry point. When a function is called, the proxy uses `delegatecall` to forward the call to the appropriate target contract, which preserves the proxy's storage context so all state changes are stored in the proxy itself rather than the implementation contracts. This pattern enables flexible upgradability where individual functions can be upgraded or replaced independently by simply updating their selector mappings to point to new implementation contracts.
 

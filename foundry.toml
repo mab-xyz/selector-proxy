@@ -3,4 +3,4 @@ src = "src"
 out = "out"
 libs = ["lib", "dependencies"]
 
-remappings = ["forge-std/"="lib/forge-std/src/"]
+remappings = ["forge-std/":"lib/forge-std/src/"]

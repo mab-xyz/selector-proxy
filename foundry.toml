@@ -3,3 +3,5 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
+[dependencies]
+forge-std = { git = "https://github.com/foundry-rs/forge-std" }

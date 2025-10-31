@@ -2,6 +2,3 @@
 src = "src"
 out = "out"
 libs = ["lib", "dependencies"]
-
-[dependencies]
-forge-std = { git = "https://github.com/foundry-rs/forge-std" , version = "1.11.0"}

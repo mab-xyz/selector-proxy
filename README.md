@@ -161,7 +161,7 @@ TinyDiamond implements the core concept of EIP-2535 but omits several features f
 |---------|-------------|---------------|
 | Selector routing | ✅ | ✅ |
 | `delegatecall` to facets | ✅ | ✅ |
-| Simple function mapping | ✅ | ❌ |
+| Simple API | ✅ | ❌ |
 | Batch updates (`diamondCut`) | ❌ | ✅ |
 | Introspection (`IDiamondLoupe`) | ❌ | ✅ |
 | Per-selector access control | ✅ | ❌ |

@@ -91,7 +91,7 @@ contract TinyDiamondTest is Test {
         bytes4 selector = TestFacet1.function1.selector;
 
         vm.prank(user);
-        vm.expectRevert("SelectorProxy: caller is not admin");
+        vm.expectRevert("TinyDiamond: caller is not admin");
         diamond.sharpCut(selector, address(facet1));
     }
 
@@ -109,48 +109,152 @@ contract TinyDiamondTest is Test {
         assertEq(diamond.selectorToFacet(selector3), address(facet2));
     }
 
-    // ============ changeAdmin Tests ============
 
-    function test_ChangeAdmin_Success() public {
-        address newAdmin = address(0x5678);
+    // ============ restrict Tests ============
 
-        vm.expectEmit(true, true, false, false);
-        emit AdminChanged(admin, newAdmin);
-
-        diamond.changeAdmin(newAdmin);
-
-        assertEq(diamond.admin(), newAdmin, "Admin should be updated");
-    }
-
-    function test_ChangeAdmin_OnlyAdmin() public {
-        address newAdmin = address(0x5678);
-
-        vm.prank(user);
-        vm.expectRevert("SelectorProxy: caller is not admin");
-        diamond.changeAdmin(newAdmin);
-    }
-
-    function test_ChangeAdmin_RevertZeroAddress() public {
-        vm.expectRevert("SelectorProxy: new admin is zero address");
-        diamond.changeAdmin(address(0));
-    }
-
-    function test_ChangeAdmin_NewAdminCanManage() public {
-        address newAdmin = address(0x5678);
+    function test_Restrict_SetRestriction() public {
         bytes4 selector = TestFacet1.function1.selector;
 
-        // Change admin
-        diamond.changeAdmin(newAdmin);
+        diamond.restrict(selector, user);
 
-        // Old admin cannot manage
-        vm.expectRevert("SelectorProxy: caller is not admin");
+        assertEq(diamond.selectorRestriction(selector), user, "Restriction should be set to user");
+    }
+
+    function test_Restrict_OnlyAdmin() public {
+        bytes4 selector = TestFacet1.function1.selector;
+
+        vm.prank(user);
+        vm.expectRevert("TinyDiamond: caller is not admin");
+        diamond.restrict(selector, user);
+    }
+
+    function test_Restrict_RemoveRestriction() public {
+        bytes4 selector = TestFacet1.function1.selector;
+
+        // First set restriction
+        diamond.restrict(selector, user);
+        assertEq(diamond.selectorRestriction(selector), user);
+
+        // Then remove by setting to address(0)
+        diamond.restrict(selector, address(0));
+        assertEq(diamond.selectorRestriction(selector), address(0), "Restriction should be removed");
+    }
+
+    function test_Restrict_UpdateExistingRestriction() public {
+        bytes4 selector = TestFacet1.function1.selector;
+        address user2 = address(0x5678);
+
+        // Set initial restriction
+        diamond.restrict(selector, user);
+        assertEq(diamond.selectorRestriction(selector), user);
+
+        // Update to different address
+        diamond.restrict(selector, user2);
+        assertEq(diamond.selectorRestriction(selector), user2, "Restriction should be updated");
+    }
+
+    function test_Restrict_RestrictedFunctionCanBeCalledByAuthorizedAddress() public {
+        bytes4 selector = TestFacet1.function1.selector;
+
+        // Set up facet and restriction
+        diamond.sharpCut(selector, address(facet1));
+        diamond.restrict(selector, user);
+
+        // Call from authorized address
+        vm.prank(user);
+        (bool success, bytes memory result) = address(diamond).call(
+            abi.encodeWithSelector(selector)
+        );
+
+        assertTrue(success, "Authorized address should be able to call");
+        assertEq(abi.decode(result, (string)), "function1", "Should return correct value");
+    }
+
+    function test_Restrict_RestrictedFunctionCannotBeCalledByUnauthorizedAddress() public {
+        bytes4 selector = TestFacet1.function1.selector;
+        address unauthorizedUser = address(0x9999);
+
+        // Set up facet and restriction
+        diamond.sharpCut(selector, address(facet1));
+        diamond.restrict(selector, user);
+
+        // Try to call from unauthorized address
+        vm.prank(unauthorizedUser);
+        vm.expectRevert("TinyDiamond: caller is not allowed");
+        address(diamond).call(abi.encodeWithSelector(selector));
+    }
+
+    function test_Restrict_UnrestrictedFunctionCanBeCalledByAnyone() public {
+        bytes4 selector = TestFacet1.function1.selector;
+        address anyUser = address(0x9999);
+
+        // Set up facet without restriction
         diamond.sharpCut(selector, address(facet1));
 
-        // New admin can manage
-        vm.prank(newAdmin);
-        diamond.sharpCut(selector, address(facet1));
+        // Call from any address
+        vm.prank(anyUser);
+        (bool success, bytes memory result) = address(diamond).call(
+            abi.encodeWithSelector(selector)
+        );
 
-        assertEq(diamond.selectorToFacet(selector), address(facet1));
+        assertTrue(success, "Any address should be able to call unrestricted function");
+        assertEq(abi.decode(result, (string)), "function1", "Should return correct value");
+    }
+
+    function test_Restrict_RemovingRestrictionAllowsAnyoneToCAll() public {
+        bytes4 selector = TestFacet1.function1.selector;
+        address anyUser = address(0x9999);
+
+        // Set up facet and restriction
+        diamond.sharpCut(selector, address(facet1));
+        diamond.restrict(selector, user);
+
+        // Verify restriction works
+        vm.prank(anyUser);
+        vm.expectRevert("TinyDiamond: caller is not allowed");
+        address(diamond).call(abi.encodeWithSelector(selector));
+
+        // Remove restriction
+        diamond.restrict(selector, address(0));
+
+        // Now anyone can call
+        vm.prank(anyUser);
+        (bool success, bytes memory result) = address(diamond).call(
+            abi.encodeWithSelector(selector)
+        );
+
+        assertTrue(success, "Any address should be able to call after restriction removed");
+        assertEq(abi.decode(result, (string)), "function1", "Should return correct value");
+    }
+
+    function test_Restrict_MultipleFunctionsWithDifferentRestrictions() public {
+        bytes4 selector1 = TestFacet1.function1.selector;
+        bytes4 selector2 = TestFacet1.function2.selector;
+        address user2 = address(0x5678);
+
+        // Set up facets and different restrictions
+        diamond.sharpCut(selector1, address(facet1));
+        diamond.sharpCut(selector2, address(facet1));
+        diamond.restrict(selector1, user);
+        diamond.restrict(selector2, user2);
+
+        // User can call function1 but not function2
+        vm.prank(user);
+        (bool success1,) = address(diamond).call(abi.encodeWithSelector(selector1));
+        assertTrue(success1, "User should be able to call function1");
+
+        vm.prank(user);
+        vm.expectRevert("TinyDiamond: caller is not allowed");
+        address(diamond).call(abi.encodeWithSelector(selector2));
+
+        // User2 can call function2 but not function1
+        vm.prank(user2);
+        (bool success2,) = address(diamond).call(abi.encodeWithSelector(selector2));
+        assertTrue(success2, "User2 should be able to call function2");
+
+        vm.prank(user2);
+        vm.expectRevert("TinyDiamond: caller is not allowed");
+        address(diamond).call(abi.encodeWithSelector(selector1));
     }
 
     // ============ getTarget Tests ============
@@ -214,7 +318,7 @@ contract TinyDiamondTest is Test {
         bytes4 selector = TestFacet1.function1.selector;
         // Don't set selector mapping
 
-        vm.expectRevert("SelectorProxy: selector not found");
+        vm.expectRevert("TinyDiamond: selector not found");
         address(diamond).call(abi.encodeWithSelector(selector));
     }
 
@@ -344,7 +448,7 @@ contract TinyDiamondTest is Test {
 
         // This should fail because sharpCut requires admin
         vm.prank(user);
-        vm.expectRevert("SelectorProxy: caller is not admin");
+        vm.expectRevert("TinyDiamond: caller is not admin");
         diamond.sharpCut(sharpCutSelector, address(facet1));
     }
 
@@ -378,13 +482,6 @@ contract TinyDiamondTest is Test {
 
         diamond.sharpCut(selector, target);
         assertEq(diamond.selectorToFacet(selector), target);
-    }
-
-    function testFuzz_ChangeAdmin_ArbitraryAddress(address newAdmin) public {
-        vm.assume(newAdmin != address(0));
-
-        diamond.changeAdmin(newAdmin);
-        assertEq(diamond.admin(), newAdmin);
     }
 
     function testFuzz_Receive_ArbitraryAmounts(uint256 amount) public {

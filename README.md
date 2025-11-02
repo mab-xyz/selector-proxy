@@ -24,6 +24,13 @@ interface ITinyDiamond {
      * @param target The target contract address
      */
     function sharpCut(bytes4 selector, address target) external;
+
+    /**
+     * @notice Restricts an access to a function to an authorized address (set to zero to remove restriction)
+     * @param selector The function selector (4 bytes)
+     * @param target The target contract address allowed to use this selector.
+     */
+    function restrict(bytes4 selector, address target) external;
 }
 ```
 
